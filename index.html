@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Unhurried Time Booklet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=LXGW+WenKai+TC:wght@400;700&display=block" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbf1e6;
+    --bg-blob: #f6d9cf;
+    --ink: #5b3a2e;
+    --ink-soft: #9a7363;
+    --cover: #c8704f;
+    --cover-dark: #a9563a;
+    --paper: #fffaf2;
+    --paper-line: #efe2d2;
+    --metal: #c9a86a;
+    --purse: #e9a7a0;
+    --purse-dark: #d48a83;
+    --purse-flap: #f1bdb6;
+    --heart: #e0675f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #2b211d; --bg-blob: #3d2c26; --ink: #f5e6d8; --ink-soft: #c8ab98; }
+  }
+  :root[data-theme="dark"] { --bg: #2b211d; --bg-blob: #3d2c26; --ink: #f5e6d8; --ink-soft: #c8ab98; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    overflow: hidden;
+    font-family: "Caveat", "LXGW WenKai TC", cursive;
+    color: var(--ink);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+  #viewport { position: fixed; inset: 0; cursor: pointer; overflow: hidden; }
+  /* fixed 540x960 design stage, scaled to fit */
+  #stage {
+    position: absolute; left: 50%; top: 50%; width: 540px; height: 960px;
+    transform-origin: center center;
+  }
+  .blob { position: absolute; border-radius: 50%; background: var(--bg-blob); filter: blur(2px); }
+  .float { position: absolute; font-size: 22px; color: var(--heart); opacity: .55; will-change: transform; }
+
+  #headline {
+    position: absolute; left: 0; right: 0; top: 70px; text-align: center;
+    font-size: 40px; font-weight: 700; line-height: 1.1;
+  }
+  #headline small { display: block; font-family: "LXGW WenKai TC", serif; font-size: 22px; font-weight: 400; color: var(--ink-soft); margin-top: 10px; }
+
+  #purse { position: absolute; left: 0; top: 0; width: 540px; height: 960px; pointer-events: none; }
+
+  #hint {
+    position: absolute; left: 395px; top: 650px; width: 140px; text-align: center;
+    font-size: 30px; font-weight: 700; color: var(--ink);
+  }
+
+  /* the book: positioned at its open spot; JS moves it to the keychain */
+  #book {
+    position: absolute; left: 70px; top: 215px; width: 400px; height: 500px;
+    transform-origin: 200px 0; transform-style: preserve-3d;
+  }
+  #book-inner { position: absolute; inset: 0; perspective: 1700px; transform-style: preserve-3d; }
+  .edge {
+    position: absolute; inset: 0; border-radius: 4px 10px 10px 4px;
+    background: var(--paper); border: 1px solid #e6d5c1;
+  }
+  #shadow {
+    position: absolute; left: 10px; right: -6px; bottom: -22px; height: 30px;
+    background: radial-gradient(closest-side, rgba(70,40,25,.28), transparent);
+  }
+  .page {
+    position: absolute; inset: 0; transform-origin: 0 50%; transform-style: preserve-3d;
+  }
+  .face {
+    position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    border-radius: 3px 10px 10px 3px; overflow: hidden;
+  }
+  .face.front img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .face.front::after { /* spine crease */
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 18px;
+    background: linear-gradient(90deg, rgba(60,30,20,.28), transparent);
+  }
+  .face.back {
+    transform: rotateY(180deg); background: var(--paper);
+    background-image: repeating-linear-gradient(transparent 0 33px, var(--paper-line) 33px 34px);
+  }
+  .shade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+
+  /* cover */
+  .cover {
+    background: var(--cover);
+    background-image:
+      radial-gradient(rgba(255,255,255,.07) 1px, transparent 1.5px),
+      linear-gradient(135deg, rgba(255,255,255,.08), rgba(0,0,0,.08));
+    background-size: 6px 6px, 100% 100%;
+  }
+  .cover .stitch {
+    position: absolute; inset: 16px; border: 3px dashed rgba(255,244,230,.7); border-radius: 6px 12px 12px 6px;
+  }
+  .cover .title {
+    position: absolute; left: 0; right: 0; top: 54px; text-align: center; color: #fff4e6;
+    font-size: 58px; font-weight: 700; line-height: .95;
+  }
+  .cover .heart {
+    position: absolute; left: 50%; top: 190px; width: 150px; height: 150px; margin-left: -75px;
+  }
+  .cover .quote {
+    position: absolute; left: 30px; right: 30px; bottom: 86px; text-align: center; color: #fff4e6;
+    font-family: "LXGW WenKai TC", serif; font-size: 23px; line-height: 1.5;
+  }
+  .cover .ep { position: absolute; left: 0; right: 0; bottom: 30px; text-align: center; color: rgba(255,244,230,.92); font-size: 28px; font-weight: 700; }
+
+  /* closing note */
+  .note {
+    background: var(--paper);
+    background-image: repeating-linear-gradient(transparent 0 39px, var(--paper-line) 39px 40px);
+    color: #5b3a2e; padding: 34px 34px 0 40px;
+  }
+  .note p { margin: 0 0 8px; font-size: 27px; line-height: 40px; }
+  .note .zh { font-family: "LXGW WenKai TC", serif; font-size: 23px; }
+  .note .ask { color: var(--cover-dark); font-weight: 700; }
+  .note .sign { text-align: right; font-size: 32px; font-weight: 700; margin-top: 4px; }
+  .note .tiny-heart { color: var(--heart); }
+
+  #ring { position: absolute; left: 0; top: 0; width: 540px; height: 960px; pointer-events: none; }
+  #tap {
+    position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%;
+    border: 3px solid rgba(255,255,255,.95); background: rgba(255,255,255,.35);
+    box-shadow: 0 0 0 2px rgba(91,58,46,.25); opacity: 0; pointer-events: none;
+  }
+  #counter {
+    position: absolute; left: 0; right: 0; top: 748px; text-align: center; font-size: 26px; color: var(--ink-soft);
+  }
+  #again {
+    position: absolute; left: 50%; top: 805px; transform: translateX(-50%);
+    font: inherit; font-size: 28px; font-weight: 700; color: var(--ink);
+    background: var(--paper); border: 2px solid var(--ink-soft); border-radius: 999px; padding: 6px 22px;
+    cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .4s;
+  }
+  #again.show { opacity: 1; pointer-events: auto; }
+  .video #again, .video #counter { display: none; }
+</style>
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+    <div class="blob" style="left:-120px;top:-90px;width:360px;height:360px"></div>
+    <div class="blob" style="right:-140px;top:380px;width:340px;height:340px;opacity:.7"></div>
+    <div class="blob" style="left:-90px;bottom:-120px;width:300px;height:300px;opacity:.8"></div>
+    <div id="floats"></div>
+
+    <div id="headline">a little something for you<small>給妳的一本小書 ♡</small></div>
+
+    <svg id="purse" viewBox="0 0 540 960" aria-hidden="true">
+      <g id="purse-g"><g transform="translate(30,-40)">
+        <!-- handle -->
+        <path d="M150 600 C150 430, 330 430, 330 600" fill="none" stroke="var(--purse-dark)" stroke-width="18" stroke-linecap="round"/>
+        <path d="M150 600 C150 430, 330 430, 330 600" fill="none" stroke="var(--purse)" stroke-width="10" stroke-linecap="round"/>
+        <!-- body -->
+        <path d="M78 600 Q70 590 86 586 L394 586 Q410 590 402 600 L420 880 Q422 905 396 905 L84 905 Q58 905 60 880 Z" fill="var(--purse)"/>
+        <path d="M60 860 L420 860 L420 880 Q422 905 396 905 L84 905 Q58 905 60 880 Z" fill="var(--purse-dark)" opacity=".45"/>
+        <!-- flap -->
+        <path d="M80 588 L400 588 L392 690 Q240 760 88 690 Z" fill="var(--purse-flap)"/>
+        <path d="M100 600 L380 600 L374 680 Q240 742 106 680 Z" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2.5" stroke-dasharray="7 7"/>
+        <!-- clasp -->
+        <circle cx="240" cy="716" r="15" fill="var(--metal)"/>
+        <circle cx="240" cy="716" r="7" fill="#e8d3a3"/>
+        <!-- little bow -->
+        <path d="M118 640 q-24 -18 -26 4 q2 22 26 4 q24 18 26 -4 q-2 -22 -26 -4z" fill="var(--heart)" opacity=".85"/>
+        <circle cx="118" cy="644" r="6" fill="#c9504a"/>
+        <!-- strap loop holding the keychain -->
+        <rect x="318" y="586" width="24" height="22" rx="5" fill="var(--purse-dark)"/>
+      </g></g>
+    </svg>
+
+    <svg id="ring" viewBox="0 0 540 960" aria-hidden="true">
+      <g id="ring-g">
+        <circle cx="360" cy="576" r="15" fill="none" stroke="var(--metal)" stroke-width="5"/>
+        <g id="chain" stroke="var(--metal)" stroke-width="4" fill="none"></g>
+      </g>
+    </svg>
+
+    <div id="book">
+      <div id="shadow"></div>
+      <div id="book-inner">
+        <div class="edge" style="transform:translate(7px,7px)"></div>
+        <div class="edge" style="transform:translate(4.5px,4.5px)"></div>
+        <div class="edge" style="transform:translate(2px,2px)"></div>
+        <div id="pages"></div>
+      </div>
+    </div>
+
+    <div id="hint">tap me ✨</div>
+    <div id="counter"></div>
+    <button id="again" type="button">↺ read again</button>
+    <div id="tap"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const VIDEO = new URLSearchParams(location.search).has("video");
+  if (VIDEO) document.body.classList.add("video");
+
+  const SLIDES = Array.from({ length: 18 }, (_, i) => `slides/slide-${String(i + 1).padStart(2, "0")}.jpg`);
+  const heartSVG = `<svg viewBox="0 0 100 100"><path d="M50 88 C20 66 6 50 6 32 C6 18 17 8 30 8 C39 8 46 13 50 20 C54 13 61 8 70 8 C83 8 94 18 94 32 C94 50 80 66 50 88Z" fill="#fff4e6"/><path d="M50 74 C28 58 18 46 18 33 C18 25 24 19 31 19" fill="none" stroke="#e0675f" stroke-width="5" stroke-linecap="round"/></svg>`;
+
+  const pagesHTML = [
+    `<div class="face front cover"><div class="stitch"></div>
+       <div class="title">unhurried<br>time</div>
+       <div class="heart">${heartSVG}</div>
+       <div class="quote">愛就是不怕麻煩，<br>很有時間。</div>
+       <div class="ep">for Sharon and her family ♡</div></div>`,
+    ...SLIDES.map((src) => `<div class="face front"><img src="${src}" alt="" decoding="sync"></div>`),
+    `<div class="face front note">
+       <p>Thank you for sharing your story with me <span class="tiny-heart">♡</span></p>
+       <p class="zh">謝謝妳願意跟我分享這個故事。</p>
+       <p>It moved me so much, and I think it could touch a lot of people.</p>
+       <p class="ask">May I share it with the world?</p>
+       <p class="zh ask">我可以把它分享給更多人看嗎？</p>
+       <p style="font-size:24px">(totally okay to say no ♡)</p>
+       <p class="zh" style="font-size:21px">完全不勉強喔！</p>
+       <p class="sign">— Angela</p></div>`,
+  ];
+  const N = pagesHTML.length;
+  const LAST = N - 1;
+  const pagesEl = document.getElementById("pages");
+  const pages = pagesHTML.map((html) => {
+    const p = document.createElement("div");
+    p.className = "page";
+    p.innerHTML = html + `<div class="face back"></div>`;
+    const shade = document.createElement("div");
+    shade.className = "shade";
+    p.firstElementChild.appendChild(shade);
+    pagesEl.appendChild(p);
+    return { el: p, shade };
+  });
+
+  // floating hearts & sparkles
+  const floatsEl = document.getElementById("floats");
+  const FLOATS = [
+    [60, 300, "♡", 1.0], [470, 170, "✦", 0.7], [430, 330, "♡", 0.8], [40, 520, "✦", 0.6],
+    [500, 560, "♡", 0.9], [90, 180, "✧", 0.7], [250, 40, "✧", 0.5], [470, 700, "✦", 0.6],
+  ].map(([x, y, ch, s], i) => {
+    const d = document.createElement("div");
+    d.className = "float";
+    d.textContent = ch;
+    d.style.left = x + "px"; d.style.top = y + "px"; d.style.fontSize = 18 + s * 14 + "px";
+    if (ch !== "♡") d.style.color = "var(--metal)";
+    floatsEl.appendChild(d);
+    return { el: d, phase: i * 1.7, s };
+  });
+
+  const $ = (id) => document.getElementById(id);
+  const book = $("book"), purseG = $("purse-g"), ringG = $("ring-g"), chain = $("chain");
+  const hint = $("hint"), headline = $("headline"), tapEl = $("tap"), counter = $("counter"), again = $("again");
+
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const easeOutBack = (t) => { const c = 1.5; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+
+  // keychain anchor: booklet hangs from the ring at (330,616)
+  const CHARM_TOP = { x: 360, y: 620 }, OPEN_TOP = { x: 270, y: 215 }, CHARM_SCALE = 0.2;
+
+  function render(t, lift, flip, tap) {
+    // floats
+    for (const f of FLOATS) {
+      const y = Math.sin(t * 0.9 + f.phase) * 10, r = Math.sin(t * 0.6 + f.phase) * 12;
+      f.el.style.transform = `translateY(${y}px) rotate(${r}deg)`;
+    }
+
+    const L = clamp(lift);
+    const m = ease(L);
+    const sway = (Math.sin(t * 2.6) * 9 + Math.sin(t * 1.3 + 1) * 3) * (1 - m);
+    const scale = lerp(CHARM_SCALE, 1, easeOutBack(L));
+    const dx = lerp(CHARM_TOP.x - OPEN_TOP.x, 0, m), dy = lerp(CHARM_TOP.y - OPEN_TOP.y, 0, m);
+    book.style.transform = `translate(${dx}px, ${dy}px) rotate(${sway}deg) scale(${scale})`;
+
+    // chain: from ring bottom to booklet top, following the sway
+    const rad = (sway * Math.PI) / 180;
+    const bx = 360, by = 591;
+    const ex = CHARM_TOP.x, ey = CHARM_TOP.y;
+    let links = "";
+    const n = 4;
+    for (let i = 0; i < n; i++) {
+      const k = (i + 0.5) / n;
+      const cx = lerp(bx, ex, k) - Math.sin(rad) * 8 * k, cy = lerp(by, ey, k);
+      links += i % 2 ? `<ellipse cx="${cx}" cy="${cy}" rx="2.5" ry="6"/>` : `<ellipse cx="${cx}" cy="${cy}" rx="4.5" ry="6"/>`;
+    }
+    chain.innerHTML = links;
+    ringG.style.opacity = 1 - clamp(L * 4);
+    purseG.style.transform = `translateY(${m * 260}px)`;
+    purseG.style.opacity = 1 - clamp(L * 1.4);
+    hint.style.opacity = (1 - clamp(L * 5)) * (0.75 + 0.25 * Math.sin(t * 4));
+    hint.style.transform = `translateY(${Math.sin(t * 4) * 5}px) rotate(-4deg)`;
+    headline.style.opacity = 1 - clamp(L * 3);
+    headline.style.transform = `translateY(${-m * 30}px)`;
+
+    // pages
+    for (let i = 0; i < N; i++) {
+      const p = clamp(flip - i);
+      const { el, shade } = pages[i];
+      if (p >= 1) { el.style.visibility = "hidden"; continue; }
+      el.style.visibility = "visible";
+      const lifted = Math.sin(p * Math.PI) * 30;
+      el.style.transform = `translateZ(${lifted}px) rotateY(${-p * 178}deg)`;
+      el.style.opacity = p > 0.55 ? 1 - (p - 0.55) / 0.45 : 1;
+      el.style.zIndex = p > 0 ? N + 2 : N - i;
+      shade.style.opacity = p * 0.35;
+    }
+
+    const shownPage = Math.round(flip);
+    counter.textContent = L > 0.95 && shownPage > 0 && shownPage < LAST ? `${shownPage} / ${SLIDES.length}` : "";
+    again.classList.toggle("show", !VIDEO && L > 0.95 && flip > LAST - 0.05);
+
+    if (tap) {
+      tapEl.style.left = tap.x + "px"; tapEl.style.top = tap.y + "px";
+      const a = clamp(tap.age / 0.45);
+      tapEl.style.opacity = a < 1 ? (1 - a) * 0.95 : 0;
+      tapEl.style.transform = `scale(${0.6 + a * 0.9})`;
+    } else tapEl.style.opacity = 0;
+  }
+
+  // fit 540x960 stage to the window
+  function fit() {
+    const s = Math.min(innerWidth / 540, innerHeight / 960);
+    $("stage").style.transform = `translate(-50%, -50%) scale(${s})`;
+  }
+  addEventListener("resize", fit); fit();
+
+  // ---------- video mode: deterministic timeline ----------
+  const HOLD = 2.0, FLIPDUR = 0.75;
+  const timeline = (() => {
+    const ev = [];
+    let t = 2.2;
+    ev.push({ kind: "tap", at: t - 0.15, x: 360, y: 670 });
+    ev.push({ kind: "lift", from: t, to: t + 1.5 });
+    t += 1.5 + 1.0;
+    for (let i = 0; i < LAST; i++) {
+      ev.push({ kind: "tap", at: t - 0.15, x: 420, y: 520 });
+      ev.push({ kind: "flip", from: t, to: t + FLIPDUR, page: i });
+      t += FLIPDUR + (i === 0 ? 1.2 : HOLD);
+    }
+    return { ev, end: t + 3.5 };
+  })();
+  function videoState(t) {
+    let lift = 0, flip = 0, tap = null;
+    for (const e of timeline.ev) {
+      if (e.kind === "lift") lift = clamp((t - e.from) / (e.to - e.from));
+      if (e.kind === "flip" && t >= e.from) flip = e.page + ease(clamp((t - e.from) / (e.to - e.from)));
+      if (e.kind === "tap" && t >= e.at && t - e.at < 0.5) tap = { x: e.x, y: e.y, age: t - e.at };
+    }
+    return { lift, flip, tap };
+  }
+  window.__duration = timeline.end;
+  window.__frame = (t) => { const s = videoState(t); render(t, s.lift, s.flip, s.tap); };
+  window.__ready = Promise.all([
+    document.fonts.ready,
+    ...[...document.images].map((img) => img.decode().catch(() => {})),
+  ]);
+
+  if (VIDEO) { __frame(0); return; }
+
+  // ---------- interactive mode ----------
+  const state = { lift: 0, flip: 0 };
+  const tweens = {};
+  function tweenTo(prop, to, dur) {
+    tweens[prop] = { from: state[prop], to, start: performance.now(), dur: dur * 1000 };
+  }
+  let tap = null;
+  function next() {
+    if (state.lift < 0.5 && !tweens.lift) return tweenTo("lift", 1, 1.4);
+    const target = Math.min(LAST, Math.round(tweens.flip ? tweens.flip.to : state.flip) + 1);
+    if (target !== state.flip) tweenTo("flip", target, 0.75);
+  }
+  function prev() {
+    const cur = Math.round(tweens.flip ? tweens.flip.to : state.flip);
+    if (cur > 0) tweenTo("flip", cur - 1, 0.6);
+  }
+  function readAgain(e) {
+    e.stopPropagation();
+    tweenTo("flip", 0, 1.2);
+    setTimeout(() => tweenTo("lift", 0, 1.4), 1250);
+  }
+  again.addEventListener("click", readAgain);
+  $("viewport").addEventListener("click", (e) => {
+    const r = $("stage").getBoundingClientRect();
+    const sx = ((e.clientX - r.left) / r.width) * 540, sy = ((e.clientY - r.top) / r.height) * 960;
+    tap = { x: sx, y: sy, born: performance.now() };
+    if (state.lift > 0.9 && sx < 170) prev(); else next();
+  });
+  addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === " ") next();
+    if (e.key === "ArrowLeft") prev();
+  });
+
+  const t0 = performance.now();
+  function loop(now) {
+    for (const k in tweens) {
+      const tw = tweens[k];
+      const a = clamp((now - tw.start) / tw.dur);
+      state[k] = lerp(tw.from, tw.to, k === "flip" ? ease(a) : a);
+      if (a >= 1) delete tweens[k];
+    }
+    const tp = tap ? { x: tap.x, y: tap.y, age: (now - tap.born) / 1000 } : null;
+    render((now - t0) / 1000, state.lift, state.flip, tp);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
